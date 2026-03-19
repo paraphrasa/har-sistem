@@ -474,6 +474,7 @@
 
     <div class="actions-row">
       <button class="btn btn-red" id="btn-batal">✕ Batalkan</button>
+      <button class="btn btn-ghost" id="btn-hitung-ulang">⟳ Hitung Ulang</button>
       <button class="btn btn-green" id="btn-konfirmasi">✓ Konfirmasi & Simpan</button>
     </div>
 
@@ -683,6 +684,50 @@ function renderPreview(d) {
 function fmt(n) {
   return Number(n).toLocaleString('id-ID');
 }
+
+// ── Hitung Ulang ─────────────────────────────────────────────────────────────
+document.getElementById('btn-hitung-ulang').addEventListener('click', () => {
+  if (!currentData) return;
+
+  // Baca nilai terbaru dari semua input di tabel
+  const tbody = document.getElementById('items-body');
+  tbody.querySelectorAll('input[data-field]').forEach(inp => {
+    const idx = parseInt(inp.dataset.idx);
+    const field = inp.dataset.field;
+    if (isNaN(idx)) return;
+    const val = inp.type === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+    currentData.items[idx][field] = val;
+  });
+
+  // Recalculate jumlah_hitung per item dan update total
+  let subtotal = 0;
+  currentData.items.forEach(item => {
+    const berat = item.berat || 0;
+    const harga = item.harga || 0;
+    item.jumlah_hitung = Math.round(berat * harga);
+    // Jika jumlah_nota belum diisi atau berbeda jauh, update juga
+    item.jumlah_nota = item.jumlah_hitung;
+    item.status = 'ok';
+    subtotal += item.jumlah_hitung;
+  });
+
+  const es = currentData.es_balok || 0;
+  currentData.subtotal_hitung = subtotal;
+  currentData.subtotal_nota   = subtotal;
+  currentData.total_hitung    = subtotal - es;
+  currentData.total_nota      = subtotal - es;
+  currentData.total_status    = 'ok';
+  currentData.selisih         = 0;
+  currentData.flags           = [];
+
+  // Re-render preview dengan data yang sudah diupdate
+  renderPreview(currentData);
+
+  // Restore nilai meta yang sudah diedit
+  document.getElementById('meta-nama').value    = currentData.nama || '';
+  document.getElementById('meta-tanggal').value = currentData.tanggal || '';
+  document.getElementById('meta-nonota').value  = currentData.no_nota || '';
+});
 
 // ── Batalkan ──────────────────────────────────────────────────────────────────
 document.getElementById('btn-batal').addEventListener('click', () => {
