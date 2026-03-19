@@ -718,6 +718,8 @@ document.getElementById('btn-konfirmasi').addEventListener('click', async () => 
     if (result.status === 'ok') {
       document.getElementById('success-sub').textContent =
         `${currentData.nama} · ${currentData.tanggal} · ${(currentData.items||[]).length} item`;
+      btn.disabled = false;
+      btn.textContent = '✓ Konfirmasi & Simpan';
       show('screen-success');
     } else {
       alert('Gagal simpan: ' + (result.error || 'Unknown error'));
@@ -725,10 +727,7 @@ document.getElementById('btn-konfirmasi').addEventListener('click', async () => 
       btn.textContent = '✓ Konfirmasi & Simpan';
     }
   } catch (err) {
-    // Sheets belum tersambung — tampilkan pesan informatif
-    document.getElementById('success-sub').textContent =
-      'Google Sheets belum tersambung. Data OCR berhasil dibaca — sambungkan Sheets untuk menyimpan.';
-    show('screen-success');
+    alert('Gagal terhubung ke server: ' + err.message);
     btn.disabled = false;
     btn.textContent = '✓ Konfirmasi & Simpan';
   }

@@ -50,13 +50,26 @@ RULES BACA NOTA:
 - Semua baris jenis kosong = flag konfirmasi jenis
 - Tanggal sering terbalik DD/MM vs MM/DD = flag jika tidak masuk akal
 - Digit 850 sering terbaca 800 = selalu hitung ulang 3 digit terakhir
-- Angka harga: jangan kalikan dengan apapun, ambil angka mentah dari nota
-  contoh: jika tertulis 232, maka harga = 232, bukan 232000
 - ES = Es Balok, bukan jenis udang, ini potongan dari total pembayaran
 - Catatan timbang angka-angka di tepi nota = simpan sebagai side_notes
-- Flag HANYA jika: berat x harga tidak sama dengan jumlah di nota,
-  ukuran di luar range jenis, jenis tidak dikenal, total tidak cocok
 - Semakin kecil angka ukuran = udang lebih besar = harga lebih mahal
+
+FORMAT HARGA DAN JUMLAH (SANGAT PENTING):
+- Harga di nota ditulis dalam ribuan tanpa angka nol
+  contoh: tertulis 206 maka harga = 206000 (Rp 206.000)
+  contoh: tertulis 145 maka harga = 145000 (Rp 145.000)
+- Jumlah (hasil perkalian) ditulis nilai ASLI penuh
+  contoh: tertulis 113.300 maka jumlah_nota = 113300
+- Verifikasi: berat x (angka_harga x 1000) = jumlah_nota
+  contoh: 0.55 x 206000 = 113300
+- Simpan harga di JSON sudah dalam nilai penuh (sudah dikali 1000)
+  contoh: harga = 206000 BUKAN 206
+
+FLAG HANYA jika:
+- berat x harga tidak sama dengan jumlah di nota
+- ukuran di luar range jenis
+- jenis tidak dikenal
+- total tidak cocok
 
 RETURN JSON ONLY, tidak ada markdown, tidak ada penjelasan lain:
 {
