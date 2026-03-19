@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAR — Sistem Nota</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --border: #2a2f3e;
+    --border-dim: #1e2230;
+    --text: #e8eaf0;
+    --text-dim: #6b7280;
+    --text-muted: #3d4455;
+    --accent: #3b82f6;
+    --accent-dim: #1d3a6e;
+    --green: #22c55e;
+    --green-dim: #14532d;
+    --red: #ef4444;
+    --red-dim: #450a0a;
+    --orange: #f97316;
+    --orange-dim: #431407;
+    --yellow: #eab308;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* ── Header ── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    margin-left: auto;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* ── Upload Screen ── */
+  #screen-upload { display: block; }
+  #screen-loading { display: none; }
+  #screen-preview { display: none; }
+  #screen-success { display: none; }
+
+  .upload-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    padding: 64px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--surface);
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: #151929;
+  }
+  .upload-zone input[type=file] {
+    position: absolute; inset: 0;
+    opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .upload-title {
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .upload-sub {
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  .upload-preview-img {
+    margin-top: 24px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .upload-preview-img img {
+    max-height: 200px;
+    max-width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .upload-preview-img .filename {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-primary:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+  }
+  .btn-green:hover { background: #16a34a; }
+
+  .btn-red {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid var(--red);
+  }
+  .btn-red:hover { background: var(--red-dim); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+  .actions-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  /* ── Loading ── */
+  #screen-loading {
+    text-align: center;
+    padding: 80px 0;
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* ── Preview ── */
+  .nota-header {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge-putih { background: #1e3a5f; color: #60a5fa; border: 1px solid #1d4ed8; }
+  .badge-merah-jual { background: #450a0a; color: #fca5a5; border: 1px solid #b91c1c; }
+  .badge-merah-packing { background: #431407; color: #fdba74; border: 1px solid #c2410c; }
+  .badge-kas-keluar { background: var(--red-dim); color: #fca5a5; border: 1px solid #7f1d1d; }
+  .badge-kas-masuk { background: var(--green-dim); color: #86efac; border: 1px solid #14532d; }
+  .badge-no-kas { background: #1c1917; color: #a8a29e; border: 1px solid #44403c; }
+
+  .nota-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .meta-item label {
+    display: block;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+  }
+  .meta-item input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .meta-item input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* ── Table ── */
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead th {
+    background: #13161f;
+    padding: 10px 12px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border-dim); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td {
+    padding: 8px 12px;
+    vertical-align: middle;
+  }
+  tbody tr.row-ok { background: transparent; }
+  tbody tr.row-mismatch { background: rgba(239,68,68,0.07); }
+  tbody tr.row-flag { background: rgba(249,115,22,0.07); }
+  tbody tr.row-total {
+    background: #13161f;
+    border-top: 1px solid var(--border);
+    font-weight: 600;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+  .dot-ok { background: var(--green); }
+  .dot-mismatch { background: var(--red); }
+  .dot-flag { background: var(--orange); }
+
+  table input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    width: 100%;
+    min-width: 60px;
+    transition: all 0.15s;
+  }
+  table input:hover { border-color: var(--border); }
+  table input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .num { text-align: right; font-family: var(--mono); }
+  .selisih-val { color: var(--red); font-family: var(--mono); font-size: 11px; }
+
+  /* ── Flags ── */
+  .flags-section {
+    border: 1px solid var(--orange);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: rgba(249,115,22,0.05);
+  }
+  .flags-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 10px;
+  }
+  .flag-item {
+    font-size: 12px;
+    color: #fdba74;
+    padding: 3px 0;
+    font-family: var(--mono);
+  }
+  .flag-item::before { content: '⚠ '; }
+
+  /* ── Side notes ── */
+  .sidenotes-section {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    background: var(--surface);
+  }
+  .sidenotes-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .sidenotes-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* ── Success ── */
+  #screen-success {
+    text-align: center;
+    padding: 80px 0;
+  }
+  .success-icon { font-size: 48px; margin-bottom: 16px; }
+  .success-title { font-size: 20px; font-weight: 500; margin-bottom: 8px; }
+  .success-sub { color: var(--text-dim); font-size: 13px; margin-bottom: 32px; }
+
+  /* ── Divider ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .container { padding: 20px 16px; }
+    .actions-row { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">HAR <span>//</span> Sistem Nota</div>
+  <div class="header-sub">Muara Badak · OCR v1.0</div>
+</header>
+
+<div class="container">
+
+  <!-- ── SCREEN: UPLOAD ── -->
+  <div id="screen-upload">
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" id="file-input" accept="image/*">
+      <span class="upload-icon">📋</span>
+      <div class="upload-title">Upload Foto Nota</div>
+      <div class="upload-sub">Klik atau drag foto ke sini · JPG, PNG, WEBP</div>
+      <div class="upload-preview-img" id="img-preview">
+        <img id="img-thumb" src="" alt="">
+        <span class="filename" id="img-filename"></span>
+      </div>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary" id="btn-proses" disabled>
+        ↗ Proses Nota
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SCREEN: LOADING ── -->
+  <div id="screen-loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Membaca nota...</div>
+  </div>
+
+  <!-- ── SCREEN: PREVIEW ── -->
+  <div id="screen-preview">
+
+    <div class="nota-header" id="nota-badges"></div>
+
+    <div class="nota-meta">
+      <div class="meta-item">
+        <label>Nama Supplier</label>
+        <input type="text" id="meta-nama">
+      </div>
+      <div class="meta-item">
+        <label>Tanggal</label>
+        <input type="text" id="meta-tanggal">
+      </div>
+      <div class="meta-item">
+        <label>No. Nota</label>
+        <input type="text" id="meta-nonota">
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table id="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Jenis</th>
+            <th>Berat (kg)</th>
+            <th>Ukuran</th>
+            <th>Harga/kg</th>
+            <th>Jumlah Nota</th>
+            <th>Hitung</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+    </div>
+
+    <div id="flags-section" class="flags-section" style="display:none">
+      <div class="flags-title">⚠ Perlu Diperiksa</div>
+      <div id="flags-list"></div>
+    </div>
+
+    <div id="sidenotes-section" class="sidenotes-section" style="display:none">
+      <div class="sidenotes-title">Catatan Timbang</div>
+      <div class="sidenotes-val" id="sidenotes-val"></div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-red" id="btn-batal">✕ Batalkan</button>
+      <button class="btn btn-green" id="btn-konfirmasi">✓ Konfirmasi & Simpan</button>
+    </div>
+
+  </div>
+
+  <!-- ── SCREEN: SUCCESS ── -->
+  <div id="screen-success">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Tersimpan</div>
+    <div class="success-sub" id="success-sub">Data berhasil ditulis ke Google Sheets.</div>
+    <button class="btn btn-ghost" id="btn-nota-baru">+ Nota Baru</button>
+  </div>
+
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentData = null;
+let selectedFile = null;
+
+// ── Screen helpers ────────────────────────────────────────────────────────────
+function show(id) {
+  ['screen-upload','screen-loading','screen-preview','screen-success']
+    .forEach(s => document.getElementById(s).style.display = 'none');
+  document.getElementById(id).style.display = 'block';
+}
+
+// ── Upload zone ───────────────────────────────────────────────────────────────
+const zone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+const btnProses = document.getElementById('btn-proses');
+
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) setFile(fileInput.files[0]);
+});
+
+function setFile(f) {
+  selectedFile = f;
+  btnProses.disabled = false;
+  const preview = document.getElementById('img-preview');
+  const thumb = document.getElementById('img-thumb');
+  const fname = document.getElementById('img-filename');
+  const url = URL.createObjectURL(f);
+  thumb.src = url;
+  fname.textContent = f.name;
+  preview.style.display = 'flex';
+}
+
+// ── Proses ────────────────────────────────────────────────────────────────────
+btnProses.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  show('screen-loading');
+
+  const form = new FormData();
+  form.append('foto', selectedFile);
+
+  try {
+    const res = await fetch('/api/ocr', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (data.ocr_status === 'error') {
+      alert('Error: ' + data.error);
+      show('screen-upload');
+      return;
+    }
+
+    currentData = data;
+    renderPreview(data);
+    show('screen-preview');
+  } catch (err) {
+    alert('Gagal terhubung ke server: ' + err.message);
+    show('screen-upload');
+  }
+});
+
+// ── Render Preview ────────────────────────────────────────────────────────────
+function renderPreview(d) {
+  // Badges
+  const badgesEl = document.getElementById('nota-badges');
+  const tipeClass = {
+    'putih': 'badge-putih',
+    'merah-jual': 'badge-merah-jual',
+    'merah-packing': 'badge-merah-packing'
+  }[d.tipe] || 'badge-putih';
+  const tipeLabel = {
+    'putih': 'PUTIH — Beli',
+    'merah-jual': 'MERAH — Jual',
+    'merah-packing': 'MERAH — Packing'
+  }[d.tipe] || d.tipe;
+
+  const kasClass = d.kas === 'keluar' ? 'badge-kas-keluar'
+                 : d.kas === 'masuk'  ? 'badge-kas-masuk'
+                 : 'badge-no-kas';
+  const kasLabel = d.kas === 'keluar' ? 'KAS KELUAR'
+                 : d.kas === 'masuk'  ? 'KAS MASUK'
+                 : 'BUKAN KAS';
+
+  badgesEl.innerHTML = `
+    <span class="badge ${tipeClass}">${tipeLabel}</span>
+    <span class="badge ${kasClass}">${kasLabel}</span>
+    ${d.total_status === 'selisih' ? '<span class="badge" style="background:#450a0a;color:#fca5a5;border:1px solid #b91c1c">⚠ SELISIH TOTAL</span>' : ''}
+  `;
+
+  // Meta
+  document.getElementById('meta-nama').value = d.nama || '';
+  document.getElementById('meta-tanggal').value = d.tanggal || '';
+  document.getElementById('meta-nonota').value = d.no_nota || '';
+
+  // Table
+  const tbody = document.getElementById('items-body');
+  tbody.innerHTML = '';
+
+  (d.items || []).forEach((item, i) => {
+    const rowClass = item.status === 'mismatch' ? 'row-mismatch'
+                   : item.status === 'flag'     ? 'row-flag'
+                   : 'row-ok';
+    const dotClass = item.status === 'mismatch' ? 'dot-mismatch'
+                   : item.status === 'flag'     ? 'dot-flag'
+                   : 'dot-ok';
+    const selisih = (item.jumlah_nota || 0) - (item.jumlah_hitung || 0);
+    const selisihHtml = Math.abs(selisih) > 1
+      ? `<div class="selisih-val">${selisih > 0 ? '+' : ''}${fmt(selisih)}</div>` : '';
+
+    const tr = document.createElement('tr');
+    tr.className = rowClass;
+    tr.dataset.idx = i;
+    tr.innerHTML = `
+      <td class="num" style="color:var(--text-dim)">${item.no}</td>
+      <td>
+        <input type="text" value="${item.jenis_kode || ''}" data-field="jenis_kode" data-idx="${i}" style="width:50px">
+        <span style="color:var(--text-dim);font-size:11px;margin-left:4px">${item.jenis_nama || ''}</span>
+      </td>
+      <td class="num"><input type="number" value="${item.berat || ''}" data-field="berat" data-idx="${i}" step="0.01"></td>
+      <td class="num"><input type="number" value="${item.ukuran || ''}" data-field="ukuran" data-idx="${i}"></td>
+      <td class="num"><input type="number" value="${item.harga || ''}" data-field="harga" data-idx="${i}"></td>
+      <td class="num"><input type="number" value="${item.jumlah_nota || ''}" data-field="jumlah_nota" data-idx="${i}"></td>
+      <td class="num" style="color:var(--text-dim);font-family:var(--mono)">${fmt(item.jumlah_hitung || 0)}${selisihHtml}</td>
+      <td><span class="status-dot ${dotClass}"></span>${item.status}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Es balok row
+  if (d.es_balok) {
+    const tr = document.createElement('tr');
+    tr.className = 'row-flag';
+    tr.innerHTML = `
+      <td></td>
+      <td colspan="4" style="color:var(--text-dim);font-family:var(--mono);font-size:11px">ES BALOK (potongan)</td>
+      <td class="num" style="color:var(--orange);font-family:var(--mono)">- ${fmt(d.es_balok)}</td>
+      <td colspan="2"></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Total row
+  const trTotal = document.createElement('tr');
+  trTotal.className = 'row-total';
+  const totalOk = d.total_status === 'ok';
+  trTotal.innerHTML = `
+    <td></td>
+    <td colspan="4" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">TOTAL</td>
+    <td class="num" style="font-family:var(--mono)">${fmt(d.total_nota || 0)}</td>
+    <td class="num" style="font-family:var(--mono);color:${totalOk ? 'var(--green)' : 'var(--red)'}">${fmt(d.total_hitung || 0)}</td>
+    <td style="font-family:var(--mono);font-size:11px;color:${totalOk ? 'var(--green)' : 'var(--red)'}">${totalOk ? '✓ cocok' : '✗ selisih ' + fmt(d.selisih)}</td>
+  `;
+  tbody.appendChild(trTotal);
+
+  // Listen for edits
+  tbody.querySelectorAll('input[data-field]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const idx = parseInt(inp.dataset.idx);
+      const field = inp.dataset.field;
+      const val = inp.type === 'number' ? parseFloat(inp.value) : inp.value;
+      currentData.items[idx][field] = val;
+    });
+  });
+
+  // Flags
+  const flagsSection = document.getElementById('flags-section');
+  const flagsList = document.getElementById('flags-list');
+  if (d.flags && d.flags.length > 0) {
+    flagsList.innerHTML = d.flags.map(f => `<div class="flag-item">${f}</div>`).join('');
+    flagsSection.style.display = 'block';
+  } else {
+    flagsSection.style.display = 'none';
+  }
+
+  // Side notes
+  const snSection = document.getElementById('sidenotes-section');
+  if (d.side_notes) {
+    document.getElementById('sidenotes-val').textContent = d.side_notes;
+    snSection.style.display = 'block';
+  } else {
+    snSection.style.display = 'none';
+  }
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString('id-ID');
+}
+
+// ── Batalkan ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-batal').addEventListener('click', () => {
+  currentData = null;
+  selectedFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  btnProses.disabled = true;
+  show('screen-upload');
+});
+
+// ── Konfirmasi ────────────────────────────────────────────────────────────────
+document.getElementById('btn-konfirmasi').addEventListener('click', async () => {
+  if (!currentData) return;
+
+  // Update meta dari input
+  currentData.nama    = document.getElementById('meta-nama').value;
+  currentData.tanggal = document.getElementById('meta-tanggal').value;
+  currentData.no_nota = document.getElementById('meta-nonota').value;
+
+  const btn = document.getElementById('btn-konfirmasi');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    const res = await fetch('/api/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(currentData)
+    });
+    const result = await res.json();
+
+    if (result.status === 'ok') {
+      document.getElementById('success-sub').textContent =
+        `${currentData.nama} · ${currentData.tanggal} · ${(currentData.items||[]).length} item`;
+      show('screen-success');
+    } else {
+      alert('Gagal simpan: ' + (result.error || 'Unknown error'));
+      btn.disabled = false;
+      btn.textContent = '✓ Konfirmasi & Simpan';
+    }
+  } catch (err) {
+    // Sheets belum tersambung — tampilkan pesan informatif
+    document.getElementById('success-sub').textContent =
+      'Google Sheets belum tersambung. Data OCR berhasil dibaca — sambungkan Sheets untuk menyimpan.';
+    show('screen-success');
+    btn.disabled = false;
+    btn.textContent = '✓ Konfirmasi & Simpan';
+  }
+});
+
+// ── Nota Baru ─────────────────────────────────────────────────────────────────
+document.getElementById('btn-nota-baru').addEventListener('click', () => {
+  currentData = null;
+  selectedFile = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('img-preview').style.display = 'none';
+  btnProses.disabled = true;
+  show('screen-upload');
+});
+</script>
+</body>
+</html>
