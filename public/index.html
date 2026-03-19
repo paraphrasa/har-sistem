@@ -618,8 +618,8 @@ function renderPreview(d) {
       <td class="num"><input type="number" value="${item.berat || ''}" data-field="berat" data-idx="${i}" step="0.01"></td>
       <td class="num"><input type="number" value="${item.ukuran || ''}" data-field="ukuran" data-idx="${i}"></td>
       <td class="num"><input type="number" value="${item.harga || ''}" data-field="harga" data-idx="${i}"></td>
-      <td class="num"><input type="number" value="${item.jumlah_nota || ''}" data-field="jumlah_nota" data-idx="${i}"></td>
-      <td class="num" style="color:var(--text-dim);font-family:var(--mono)">${fmt(item.jumlah_hitung || 0)}${selisihHtml}</td>
+      <td class="num"><input type="number" value="${item.jumlah_nota || ''}" data-field="jumlah_nota" data-idx="${i}" style="min-width:90px"></td>
+      <td class="num" style="color:var(--text-dim);font-family:var(--mono)">${fmtRp(item.jumlah_hitung || 0)}${selisihHtml}</td>
       <td><span class="status-dot ${dotClass}"></span>${item.status}</td>
     `;
     tbody.appendChild(tr);
@@ -632,11 +632,23 @@ function renderPreview(d) {
     tr.innerHTML = `
       <td></td>
       <td colspan="4" style="color:var(--text-dim);font-family:var(--mono);font-size:11px">ES BALOK (potongan)</td>
-      <td class="num" style="color:var(--orange);font-family:var(--mono)">- ${fmt(d.es_balok)}</td>
+      <td class="num" style="color:var(--orange);font-family:var(--mono)">- ${fmtRp(d.es_balok)}</td>
       <td colspan="2"></td>
     `;
     tbody.appendChild(tr);
   }
+
+  // Total KG row
+  const totalKg = (d.items || []).reduce((sum, i) => sum + (i.berat || 0), 0);
+  const trTotalKg = document.createElement('tr');
+  trTotalKg.className = 'row-total';
+  trTotalKg.innerHTML = `
+    <td></td>
+    <td colspan="2" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">TOTAL TIMBANGAN</td>
+    <td class="num" style="font-family:var(--mono);font-weight:600">${totalKg.toFixed(2)} kg</td>
+    <td colspan="4"></td>
+  `;
+  tbody.appendChild(trTotalKg);
 
   // Total row
   const trTotal = document.createElement('tr');
@@ -645,9 +657,9 @@ function renderPreview(d) {
   trTotal.innerHTML = `
     <td></td>
     <td colspan="4" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">TOTAL</td>
-    <td class="num" style="font-family:var(--mono)">${fmt(d.total_nota || 0)}</td>
-    <td class="num" style="font-family:var(--mono);color:${totalOk ? 'var(--green)' : 'var(--red)'}">${fmt(d.total_hitung || 0)}</td>
-    <td style="font-family:var(--mono);font-size:11px;color:${totalOk ? 'var(--green)' : 'var(--red)'}">${totalOk ? '✓ cocok' : '✗ selisih ' + fmt(d.selisih)}</td>
+    <td class="num" style="font-family:var(--mono)">${fmtRp(d.total_nota || 0)}</td>
+    <td class="num" style="font-family:var(--mono);color:${totalOk ? 'var(--green)' : 'var(--red)'}">${fmtRp(d.total_hitung || 0)}</td>
+    <td style="font-family:var(--mono);font-size:11px;color:${totalOk ? 'var(--green)' : 'var(--red)'}">${totalOk ? '✓ cocok' : '✗ selisih ' + fmtRp(d.selisih)}</td>
   `;
   tbody.appendChild(trTotal);
 
@@ -683,6 +695,10 @@ function renderPreview(d) {
 
 function fmt(n) {
   return Number(n).toLocaleString('id-ID');
+}
+
+function fmtRp(n) {
+  return 'Rp ' + Number(n).toLocaleString('id-ID');
 }
 
 // ── Hitung Ulang ─────────────────────────────────────────────────────────────

@@ -2,9 +2,9 @@
 sheets.py — Tulis data nota ke Google Sheets HAR
 
 3 operasi per konfirmasi:
-  1. Append ke TRANSAKSI (satu baris per item)
+  1. Append ke TRANSAKSI (satu baris per item + baris total)
   2. Append ke KAS (satu baris per nota)
-  3. Update STOK (baca → tambah → tulis balik)
+  3. Update STOK (per jenis + per ukuran untuk T, HO, PT)
 """
 
 import os
@@ -16,25 +16,26 @@ load_dotenv()
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# Urutan jenis di tab STOK (baris 2–7)
-JENIS_ROW = {
-    "T":   2,
-    "W":   3,
-    "BR":  4,
-    "HO":  5,
-    "WHO": 6,
-    "PT":  7,
+# Jenis tanpa ukuran — satu baris di STOK
+JENIS_TANPA_UKURAN = {
+    "W":   "White (W)",
+    "BR":  "Brown (BR)",
+    "WHO": "White Head On (WHO)",
 }
 
-_client = None
+# Jenis dengan ukuran — dipecah per ukuran di STOK
+JENIS_DENGAN_UKURAN = {
+    "T":  ("Tiger", 20, 70, 10),    # (nama, min, max, step)
+    "HO": ("Tiger Head On", 20, 70, 10),
+    "PT": ("Pink Tambak", 120, 500, 20),
+}
+
 _spreadsheet = None
 
 def get_sheet():
-    global _client, _spreadsheet
+    global _spreadsheet
     if _spreadsheet is None:
         json_path = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON_PATH", "./credentials.json")
-
-        # Support credentials dari environment variable (untuk Railway)
         json_str = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON")
         if json_str:
             import json, tempfile
@@ -44,39 +45,42 @@ def get_sheet():
             json_path = tmp.name
 
         creds = Credentials.from_service_account_file(json_path, scopes=SCOPES)
-        _client = gspread.authorize(creds)
-
+        import gspread
+        gc = gspread.authorize(creds)
         sheet_id = os.environ.get("GOOGLE_SHEETS_SPREADSHEET_ID")
         if not sheet_id:
-            raise RuntimeError("GOOGLE_SHEETS_SPREADSHEET_ID tidak ditemukan di environment")
-
-        _spreadsheet = _client.open_by_key(sheet_id)
-
+            raise RuntimeError("GOOGLE_SHEETS_SPREADSHEET_ID tidak ditemukan")
+        _spreadsheet = gc.open_by_key(sheet_id)
     return _spreadsheet
 
 
-def tulis(data: dict) -> dict:
-    """
-    Tulis satu nota ke Sheets.
-    Return {"status": "ok"} atau {"status": "error", "error": "..."}
-    """
+def fmt_rp(n):
+    """Format angka sebagai Rp 1.234.567"""
     try:
-        sh = get_sheet()
-        ws_transaksi = sh.worksheet("TRANSAKSI")
-        ws_kas       = sh.worksheet("KAS")
-        ws_stok      = sh.worksheet("STOK")
+        return "Rp " + f"{int(n):,}".replace(",", ".")
+    except:
+        return str(n)
 
-        tgl    = data.get("tanggal", "")
-        nama   = data.get("nama", "")
-        tipe   = (data.get("tipe") or "").upper()
-        kas    = data.get("kas", "")
-        items  = data.get("items", [])
-        es     = data.get("es_balok") or 0
-        total  = data.get("total_nota") or 0
-        notes  = data.get("side_notes") or ""
+
+def tulis(data: dict) -> dict:
+    try:
+        sh        = get_sheet()
+        ws_t      = sh.worksheet("TRANSAKSI")
+        ws_k      = sh.worksheet("KAS")
+        ws_s      = sh.worksheet("STOK")
+
+        tgl   = data.get("tanggal", "")
+        nama  = data.get("nama", "")
+        tipe  = (data.get("tipe") or "").upper()
+        kas   = data.get("kas", "")
+        items = data.get("items", [])
+        es    = data.get("es_balok") or 0
+        total = data.get("total_nota") or 0
+        notes = data.get("side_notes") or ""
 
         # ── OPERASI 1: TRANSAKSI ─────────────────────────────────────────────
         transaksi_rows = []
+        total_kg = 0
 
         for item in items:
             kode   = (item.get("jenis_kode") or "").upper()
@@ -85,93 +89,120 @@ def tulis(data: dict) -> dict:
             harga  = item.get("harga") or 0
             jumlah = item.get("jumlah_nota") or 0
 
-            kas_keluar = jumlah if kas == "keluar" else ""
-            kas_masuk  = jumlah if kas == "masuk"  else ""
+            kas_keluar = fmt_rp(jumlah) if kas == "keluar" else ""
+            kas_masuk  = fmt_rp(jumlah) if kas == "masuk"  else ""
 
             if kas == "keluar":
-                stok_delta = berat       # masuk peti
+                stok_delta = berat
             elif kas == "masuk":
-                stok_delta = -berat      # keluar jual
+                stok_delta = -berat
             elif tipe == "MERAH-PACKING":
-                stok_delta = -berat      # keluar packing
+                stok_delta = -berat
             else:
                 stok_delta = ""
 
             transaksi_rows.append([
                 tgl, nama, tipe, kode,
-                berat, ukuran, harga, jumlah,
+                berat, ukuran, fmt_rp(harga), fmt_rp(jumlah),
                 kas_keluar, kas_masuk,
                 stok_delta, notes
             ])
+            total_kg += berat
 
-        # Baris es balok (jika ada)
+        # Baris es balok
         if es:
             transaksi_rows.append([
                 tgl, nama, "ES BALOK", "ES",
-                "", "", "", es,
-                es, "", "", ""
+                "", "", "", fmt_rp(es),
+                fmt_rp(es), "", "", ""
             ])
 
+        # Baris TOTAL per nota
+        total_kas_keluar = fmt_rp(total) if kas == "keluar" else ""
+        total_kas_masuk  = fmt_rp(total) if kas == "masuk"  else ""
+        transaksi_rows.append([
+            "", "", "— TOTAL —", "",
+            round(total_kg, 2), "", "", fmt_rp(total),
+            total_kas_keluar, total_kas_masuk,
+            "", ""
+        ])
+
         if transaksi_rows:
-            ws_transaksi.append_rows(transaksi_rows, value_input_option="USER_ENTERED")
+            ws_t.append_rows(transaksi_rows, value_input_option="USER_ENTERED")
 
         # ── OPERASI 2: KAS ───────────────────────────────────────────────────
         if kas in ("keluar", "masuk"):
-            kas_keluar_total = total if kas == "keluar" else ""
-            kas_masuk_total  = total if kas == "masuk"  else ""
+            last_row      = len(ws_k.get_all_values()) + 1
+            net_formula   = f"=C{last_row}-B{last_row}"
+            saldo_formula = f"=E{last_row-1}+D{last_row}"
 
-            # Cari baris terakhir untuk formula saldo
-            last_row = len(ws_kas.get_all_values()) + 1
-            net_formula    = f"=C{last_row}-B{last_row}"
-            saldo_formula  = f"=E{last_row-1}+D{last_row}"
-
-            ws_kas.append_row([
+            ws_k.append_row([
                 tgl,
-                kas_keluar_total,
-                kas_masuk_total,
+                fmt_rp(total) if kas == "keluar" else "",
+                fmt_rp(total) if kas == "masuk"  else "",
                 net_formula,
                 saldo_formula,
                 nama
             ], value_input_option="USER_ENTERED")
 
         # ── OPERASI 3: STOK ──────────────────────────────────────────────────
-        # Baca nilai B:D baris 2–7 (6 jenis udang)
-        stok_range = ws_stok.get("B2:D7")
+        # Baca semua data STOK
+        stok_data = ws_s.get_all_values()  # list of rows
 
-        # Pastikan ada 6 baris
-        while len(stok_range) < 6:
-            stok_range.append([0, 0, 0])
+        def find_or_create_row(label):
+            """Cari baris dengan label, return index (0-based). Buat baru jika tidak ada."""
+            for i, row in enumerate(stok_data):
+                if row and row[0] == label:
+                    return i
+            # Buat baris baru
+            ws_s.append_row([label, 0, 0, 0, "", ""], value_input_option="USER_ENTERED")
+            stok_data.append([label, "0", "0", "0", "", ""])
+            return len(stok_data) - 1
 
-        # Normalisasi ke float
-        stok = []
-        for row in stok_range:
-            stok.append([
-                float(row[0]) if len(row) > 0 and row[0] != "" else 0,
-                float(row[1]) if len(row) > 1 and row[1] != "" else 0,
-                float(row[2]) if len(row) > 2 and row[2] != "" else 0,
-            ])
+        def update_stok_row(row_idx, col_idx, delta):
+            """Tambahkan delta ke sel tertentu di STOK."""
+            row_num = row_idx + 1  # 1-indexed untuk Sheets
+            cell    = ws_s.cell(row_num, col_idx + 1)
+            current = float(cell.value or 0)
+            ws_s.update_cell(row_num, col_idx + 1, round(current + delta, 3))
+            # Update formula stok aktual
+            ws_s.update_cell(row_num, 5, f"=B{row_num}-C{row_num}-D{row_num}")
 
-        # Tambahkan berat per item ke kolom yang tepat
         for item in items:
             kode  = (item.get("jenis_kode") or "").upper()
             berat = item.get("berat") or 0
+            ukuran = item.get("ukuran")
 
-            if kode not in JENIS_ROW:
+            # Tentukan kolom berdasarkan tipe transaksi
+            if kas == "keluar":
+                col = 1   # KG MASUK (col B, index 1)
+            elif kas == "masuk":
+                col = 2   # KG KELUAR JUAL (col C, index 2)
+            elif tipe == "MERAH-PACKING":
+                col = 3   # KG KELUAR PACKING (col D, index 3)
+            else:
                 continue
 
-            idx = JENIS_ROW[kode] - 2  # 0-indexed
+            if kode in JENIS_DENGAN_UKURAN:
+                # Pecah per ukuran
+                nama_jenis = JENIS_DENGAN_UKURAN[kode][0]
+                ukuran_label = f"{ukuran}" if ukuran else "?"
+                label = f"{nama_jenis} ({kode}) — ukuran {ukuran_label}"
+                row_idx = find_or_create_row(label)
+                update_stok_row(row_idx, col, berat)
 
-            if kas == "keluar":
-                stok[idx][0] += berat      # KG MASUK
-            elif kas == "masuk":
-                stok[idx][1] += berat      # KG KELUAR JUAL
-            elif tipe == "MERAH-PACKING":
-                stok[idx][2] += berat      # KG KELUAR PACKING
+                # Juga update total jenis
+                label_total = f"{nama_jenis} ({kode}) — TOTAL"
+                row_idx_total = find_or_create_row(label_total)
+                update_stok_row(row_idx_total, col, berat)
 
-        # Tulis balik
-        ws_stok.update("B2:D7", stok, value_input_option="USER_ENTERED")
+            elif kode in JENIS_TANPA_UKURAN:
+                label = JENIS_TANPA_UKURAN[kode]
+                row_idx = find_or_create_row(label)
+                update_stok_row(row_idx, col, berat)
 
         return {"status": "ok"}
 
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        import traceback
+        return {"status": "error", "error": str(e) + "\n" + traceback.format_exc()}

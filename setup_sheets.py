@@ -63,23 +63,38 @@ def setup():
     print("✓ Tab KAS siap")
 
     # ── TAB 3: STOK ──────────────────────────────────────────────────────────
-    ws_s = get_or_create_ws(sh, "STOK", rows=20, cols=10)
-    if ws_s.cell(1, 1).value != "JENIS UDANG":
-        ws_s.clear()
-        ws_s.append_row([
-            "JENIS UDANG", "KG MASUK", "KG KELUAR JUAL", "KG KELUAR PACKING",
-            "STOK AKTUAL", "% PROGRESS TRIP"
-        ])
-        jenis_list = [
-            "Tiger (T)", "White (W)", "Brown (BR)",
-            "Tiger Head On (HO)", "White Head On (WHO)", "Pink Tambak (PT)"
-        ]
-        for i, nama in enumerate(jenis_list):
-            r = i + 2
-            ws_s.append_row([nama, 0, 0, 0, f"=B{r}-C{r}-D{r}", f'=IF(E{r}>0,E{r}/2000,"—")'])
-        ws_s.format("A1:F1", header_fmt)
-        ws_s.freeze(rows=1)
-    print("✓ Tab STOK siap")
+    ws_s = get_or_create_ws(sh, "STOK", rows=100, cols=10)
+    ws_s.clear()
+    ws_s.append_row([
+        "JENIS UDANG", "KG MASUK", "KG KELUAR JUAL", "KG KELUAR PACKING",
+        "STOK AKTUAL", "KETERANGAN"
+    ])
+
+    # Jenis dengan ukuran (Tiger, Tiger HO, Pink Tambak)
+    ukuran_rows = [
+        ("Tiger (T)", [20,30,40,50,60,70]),
+        ("Tiger Head On (HO)", [20,30,40,50,60,70]),
+        ("Pink Tambak (PT)", [120,140,160,180,200,250,300,400,500]),
+    ]
+    r = 2
+    for nama_jenis, ukuran_list in ukuran_rows:
+        for ukuran in ukuran_list:
+            label = f"{nama_jenis} — ukuran {ukuran}"
+            ws_s.append_row([label, 0, 0, 0, f"=B{r}-C{r}-D{r}", ""])
+            r += 1
+        # Baris total per jenis
+        label_total = f"{nama_jenis} — TOTAL"
+        ws_s.append_row([label_total, 0, 0, 0, f"=B{r}-C{r}-D{r}", ""])
+        r += 1
+
+    # Jenis tanpa ukuran
+    for label in ["White (W)", "Brown (BR)", "White Head On (WHO)"]:
+        ws_s.append_row([label, 0, 0, 0, f"=B{r}-C{r}-D{r}", ""])
+        r += 1
+
+    ws_s.format("A1:F1", header_fmt)
+    ws_s.freeze(rows=1)
+    print("✓ Tab STOK siap (dengan breakdown ukuran)")
 
     # ── TAB 4: TRIP ──────────────────────────────────────────────────────────
     ws_tr = get_or_create_ws(sh, "TRIP", rows=100, cols=10)
