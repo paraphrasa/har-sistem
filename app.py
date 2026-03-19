@@ -5,14 +5,18 @@ import os
 from ocr import proses_nota
 from sheets import tulis as sheets_tulis
 
-app = Flask(__name__, static_folder="public", static_url_path="")
+import pathlib
+BASE_DIR = pathlib.Path(__file__).parent.resolve()
+PUBLIC_DIR = BASE_DIR / "public"
+
+app = Flask(__name__, static_folder=str(PUBLIC_DIR), static_url_path="")
 CORS(app)
 
 # ── Static frontend ──────────────────────────────────────────────────────────
 
 @app.route("/")
 def index():
-    return send_from_directory("public", "index.html")
+    return send_from_directory(str(PUBLIC_DIR), "index.html")
 
 # ── OCR endpoint ─────────────────────────────────────────────────────────────
 
