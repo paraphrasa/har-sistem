@@ -466,8 +466,7 @@
 
 <!-- Action Bar -->
 <div class="action-bar">
-  <button class="btn btn-print" id="btn-print" onclick="printNota()" disabled>🖨 Print</button>
-  <button class="btn btn-simpan" id="btn-simpan" onclick="simpan()">✓ Simpan</button>
+  <button class="btn btn-simpan" id="btn-simpan" onclick="simpanDanPrint()">✓ Simpan & Print</button>
 </div>
 
 <!-- Toast -->
@@ -649,7 +648,12 @@ function getTanggalFormatted() {
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-// ── Simpan ────────────────────────────────────────────────────────────────────
+// ── Simpan & Print ───────────────────────────────────────────────────────────
+async function simpanDanPrint() {
+  const ok = await simpan();
+  if (ok) printNota();
+}
+
 async function simpan() {
   const nama = getNamaSupplier();
   if (!nama) { showToast('Pilih atau isi nama supplier', true); return; }
@@ -701,16 +705,21 @@ async function simpan() {
 
     if (result.status === 'ok') {
       showToast('✓ Tersimpan ke Google Sheets');
-      document.getElementById('btn-print').disabled = false;
+      btn.disabled = false;
+      btn.textContent = '✓ Simpan & Print';
+      return true;
     } else {
       showToast('Gagal: ' + result.error, true);
+      btn.disabled = false;
+      btn.textContent = '✓ Simpan & Print';
+      return false;
     }
   } catch (e) {
     showToast('Gagal terhubung ke server', true);
+    btn.disabled = false;
+    btn.textContent = '✓ Simpan & Print';
+    return false;
   }
-
-  btn.disabled = false;
-  btn.textContent = '✓ Simpan';
 }
 
 // ── Print ─────────────────────────────────────────────────────────────────────
