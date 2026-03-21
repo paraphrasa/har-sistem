@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>HAR — Input Nota</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --border: #ddd8cf;
+    --border-focus: #2c5f2e;
+    --text: #1a1a18;
+    --text-dim: #7a7468;
+    --accent: #2c5f2e;
+    --accent-light: #e8f0e8;
+    --red: #b91c1c;
+    --red-light: #fef2f2;
+    --orange: #c2410c;
+    --sans: 'Segoe UI', 'Helvetica Neue', sans-serif;
+    --mono: 'Courier New', 'Consolas', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 120px;
+  }
+
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .header-sub {
+    font-size: 11px;
+    opacity: 0.7;
+    font-family: var(--mono);
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+
+  /* ── Tipe Nota ── */
+  .tipe-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .tipe-btn {
+    padding: 12px 8px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+  }
+  .tipe-btn.active-beli   { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+  .tipe-btn.active-jual   { border-color: var(--red); background: var(--red-light); color: var(--red); }
+  .tipe-btn.active-packing{ border-color: var(--orange); background: #fff7ed; color: var(--orange); }
+
+  /* ── Form fields ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .field-row.full { grid-template-columns: 1fr; }
+
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: var(--sans);
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .field input[type=number] {
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+
+  /* ── Items table ── */
+  .items-header {
+    display: grid;
+    grid-template-columns: 80px 70px 70px 90px 40px;
+    gap: 6px;
+    padding: 0 4px 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .items-header span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  .item-row {
+    display: grid;
+    grid-template-columns: 80px 70px 70px 90px 40px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .item-row input, .item-row select {
+    width: 100%;
+    padding: 8px 6px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    font-family: var(--mono);
+    background: var(--surface);
+    color: var(--text);
+    -webkit-appearance: none;
+  }
+  .item-row input:focus, .item-row select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .item-row .jumlah-display {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+    padding: 0 4px;
+  }
+  .btn-hapus {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .btn-hapus:hover { color: var(--red); }
+
+  .item-jumlah-row {
+    display: grid;
+    grid-template-columns: 80px 70px 70px 90px 40px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .item-jumlah-row .jumlah-val {
+    grid-column: 4;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    text-align: right;
+    padding-right: 4px;
+  }
+
+  .btn-tambah {
+    width: 100%;
+    padding: 10px;
+    border: 1.5px dashed var(--border);
+    border-radius: 6px;
+    background: none;
+    color: var(--text-dim);
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.15s;
+  }
+  .btn-tambah:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  /* ── Total section ── */
+  .total-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .total-row:last-child { border-bottom: none; }
+  .total-label { font-size: 12px; color: var(--text-dim); }
+  .total-val { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+  .total-val.grand { font-size: 18px; color: var(--accent); }
+
+  /* ── Action buttons ── */
+  .action-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-simpan {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-simpan:hover { background: #1e4220; }
+  .btn-simpan:disabled { background: var(--border); color: var(--text-dim); cursor: not-allowed; }
+  .btn-print {
+    background: var(--bg);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    flex: 0.6;
+  }
+  .btn-print:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-print:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    top: 70px; left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .toast.error { background: var(--red); }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: white; padding: 0; }
+    header, .action-bar, .btn-hapus, .btn-tambah { display: none !important; }
+    .nota-print { display: block !important; }
+    .container { display: none; }
+  }
+
+  .nota-print {
+    display: none;
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px;
+    max-width: 300px;
+  }
+  .nota-print .np-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .nota-print .np-sub {
+    text-align: center;
+    font-size: 10px;
+    margin-bottom: 8px;
+  }
+  .nota-print .np-divider {
+    border-top: 1px dashed #000;
+    margin: 6px 0;
+  }
+  .nota-print .np-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2px;
+  }
+  .nota-print .np-item {
+    margin-bottom: 4px;
+  }
+  .nota-print .np-total {
+    font-weight: bold;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">HAR // Input Nota</div>
+    <div class="header-sub">Muara Badak</div>
+  </div>
+  <div class="header-sub" id="header-date"></div>
+</header>
+
+<div class="container">
+
+  <!-- Tipe Nota -->
+  <div class="tipe-row" style="margin-top:16px">
+    <button class="tipe-btn active-beli" data-tipe="beli" onclick="setTipe('beli')">BELI</button>
+    <button class="tipe-btn" data-tipe="jual" onclick="setTipe('jual')">JUAL</button>
+    <button class="tipe-btn" data-tipe="packing" onclick="setTipe('packing')">PACKING</button>
+  </div>
+
+  <!-- Info Nota -->
+  <div class="section">
+    <div class="section-title">Info Nota</div>
+    <div class="field-row full" style="margin-bottom:10px">
+      <div class="field">
+        <label>Supplier</label>
+        <select id="supplier-select" onchange="onSupplierChange(this)">
+          <option value="">— Pilih Supplier —</option>
+          <optgroup label="Supplier Besar">
+            <option value="Bakri">Bakri</option>
+            <option value="Dahlan">Dahlan</option>
+            <option value="Manna">Manna</option>
+          </optgroup>
+          <optgroup label="Petambak">
+            <option value="__baru__">+ Supplier Baru...</option>
+          </optgroup>
+        </select>
+      </div>
+    </div>
+    <div id="supplier-baru-field" class="field-row full" style="display:none;margin-bottom:10px">
+      <div class="field">
+        <label>Nama Supplier Baru</label>
+        <input type="text" id="supplier-baru" placeholder="Ketik nama supplier">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Tanggal</label>
+        <input type="date" id="tanggal">
+      </div>
+      <div class="field">
+        <label>No. Nota</label>
+        <input type="text" id="no-nota" placeholder="Opsional">
+      </div>
+    </div>
+  </div>
+
+  <!-- Items -->
+  <div class="section">
+    <div class="section-title">Item Udang</div>
+    <div class="items-header">
+      <span>Jenis</span>
+      <span>Berat (kg)</span>
+      <span>Ukuran</span>
+      <span>Harga</span>
+      <span></span>
+    </div>
+    <div id="items-container"></div>
+    <button class="btn-tambah" onclick="tambahItem()">+ Tambah Baris</button>
+  </div>
+
+  <!-- Es Balok -->
+  <div class="section">
+    <div class="section-title">Es Balok (Opsional)</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Potongan Es (Rp)</label>
+        <input type="number" id="es-balok" placeholder="0" min="0" oninput="updateTotal()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Total -->
+  <div class="total-section">
+    <div class="total-row">
+      <span class="total-label">Total Timbangan</span>
+      <span class="total-val" id="total-kg">0.00 kg</span>
+    </div>
+    <div class="total-row">
+      <span class="total-label">Subtotal</span>
+      <span class="total-val" id="subtotal-val">Rp 0</span>
+    </div>
+    <div class="total-row" id="es-row" style="display:none">
+      <span class="total-label">Potongan Es Balok</span>
+      <span class="total-val" style="color:var(--red)" id="es-val">- Rp 0</span>
+    </div>
+    <div class="total-row">
+      <span class="total-label" style="font-weight:600">TOTAL BAYAR</span>
+      <span class="total-val grand" id="total-val">Rp 0</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Action Bar -->
+<div class="action-bar">
+  <button class="btn btn-print" id="btn-print" onclick="printNota()" disabled>🖨 Print</button>
+  <button class="btn btn-simpan" id="btn-simpan" onclick="simpan()">✓ Simpan</button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Nota Print -->
+<div class="nota-print" id="nota-print"></div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let tipe = 'beli';
+let itemCount = 0;
+let lastSavedData = null;
+
+const JENIS_LIST = [
+  { kode: 'T',   nama: 'Tiger',           ukuran: true  },
+  { kode: 'W',   nama: 'White',           ukuran: false },
+  { kode: 'BR',  nama: 'Brown',           ukuran: false },
+  { kode: 'HO',  nama: 'Tiger Head On',   ukuran: true  },
+  { kode: 'WHO', nama: 'White Head On',   ukuran: false },
+  { kode: 'PT',  nama: 'Pink Tambak',     ukuran: true  },
+];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  // Set tanggal hari ini
+  const today = new Date();
+  document.getElementById('tanggal').value = today.toISOString().split('T')[0];
+
+  // Format header date
+  document.getElementById('header-date').textContent =
+    today.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Tambah satu baris item awal
+  tambahItem();
+};
+
+// ── Tipe nota ─────────────────────────────────────────────────────────────────
+function setTipe(t) {
+  tipe = t;
+  document.querySelectorAll('.tipe-btn').forEach(btn => {
+    btn.className = 'tipe-btn';
+    if (btn.dataset.tipe === t) btn.classList.add(`active-${t}`);
+  });
+}
+
+// ── Supplier ──────────────────────────────────────────────────────────────────
+function onSupplierChange(sel) {
+  const baruField = document.getElementById('supplier-baru-field');
+  baruField.style.display = sel.value === '__baru__' ? 'block' : 'none';
+  if (sel.value === '__baru__') {
+    document.getElementById('supplier-baru').focus();
+  }
+}
+
+function getNamaSupplier() {
+  const sel = document.getElementById('supplier-select').value;
+  if (sel === '__baru__') return document.getElementById('supplier-baru').value.trim();
+  return sel;
+}
+
+// ── Items ─────────────────────────────────────────────────────────────────────
+function tambahItem() {
+  const id = ++itemCount;
+  const container = document.getElementById('items-container');
+
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.id = `item-${id}`;
+  row.innerHTML = `
+    <select onchange="onJenisChange(${id})" id="jenis-${id}">
+      ${JENIS_LIST.map(j => `<option value="${j.kode}">${j.kode}</option>`).join('')}
+    </select>
+    <input type="number" id="berat-${id}" placeholder="0.00" step="0.01" min="0"
+      oninput="updateJumlah(${id})" style="font-size:15px">
+    <input type="number" id="ukuran-${id}" placeholder="—" min="0"
+      oninput="updateJumlah(${id})">
+    <input type="number" id="harga-${id}" placeholder="0" min="0"
+      oninput="updateJumlah(${id})" style="font-size:15px">
+    <button class="btn-hapus" onclick="hapusItem(${id})">×</button>
+  `;
+  container.appendChild(row);
+
+  // Jumlah display row
+  const jumlahRow = document.createElement('div');
+  jumlahRow.id = `jumlah-row-${id}`;
+  jumlahRow.style.cssText = 'display:flex;justify-content:flex-end;padding:0 46px 8px 0;border-bottom:1px solid var(--border);margin-bottom:6px';
+  jumlahRow.innerHTML = `
+    <span style="font-size:10px;color:var(--text-dim);margin-right:8px;line-height:20px">Jumlah</span>
+    <span id="jumlah-${id}" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent)">Rp 0</span>
+  `;
+  container.appendChild(jumlahRow);
+
+  // Focus berat
+  setTimeout(() => document.getElementById(`berat-${id}`).focus(), 50);
+}
+
+function onJenisChange(id) {
+  const kode = document.getElementById(`jenis-${id}`).value;
+  const jenis = JENIS_LIST.find(j => j.kode === kode);
+  const ukuranInput = document.getElementById(`ukuran-${id}`);
+  ukuranInput.disabled = !jenis?.ukuran;
+  ukuranInput.placeholder = jenis?.ukuran ? '20-70' : '—';
+  if (!jenis?.ukuran) ukuranInput.value = '';
+  updateJumlah(id);
+}
+
+function hapusItem(id) {
+  document.getElementById(`item-${id}`)?.remove();
+  document.getElementById(`jumlah-row-${id}`)?.remove();
+  updateTotal();
+}
+
+function updateJumlah(id) {
+  const berat = parseFloat(document.getElementById(`berat-${id}`)?.value) || 0;
+  const harga = parseFloat(document.getElementById(`harga-${id}`)?.value) || 0;
+  const jumlah = Math.round(berat * harga * 1000); // harga dalam ribuan
+  document.getElementById(`jumlah-${id}`).textContent = fmtRp(jumlah);
+  updateTotal();
+}
+
+function getItems() {
+  const items = [];
+  for (let i = 1; i <= itemCount; i++) {
+    const jenisEl = document.getElementById(`jenis-${i}`);
+    if (!jenisEl) continue;
+    const kode   = jenisEl.value;
+    const berat  = parseFloat(document.getElementById(`berat-${i}`)?.value) || 0;
+    const ukuran = parseFloat(document.getElementById(`ukuran-${i}`)?.value) || null;
+    const harga  = parseFloat(document.getElementById(`harga-${i}`)?.value) || 0;
+    if (berat === 0 && harga === 0) continue;
+    const jenis  = JENIS_LIST.find(j => j.kode === kode);
+    const hargaFull = harga * 1000;
+    const jumlah = Math.round(berat * hargaFull);
+    items.push({
+      no: items.length + 1,
+      jenis_kode: kode,
+      jenis_nama: jenis?.nama || kode,
+      berat, ukuran, harga: hargaFull,
+      jumlah_nota: jumlah,
+      jumlah_hitung: jumlah,
+      status: 'ok'
+    });
+  }
+  return items;
+}
+
+function updateTotal() {
+  const items    = getItems();
+  const totalKg  = items.reduce((s, i) => s + i.berat, 0);
+  const subtotal = items.reduce((s, i) => s + i.jumlah_nota, 0);
+  const es       = parseFloat(document.getElementById('es-balok')?.value) || 0;
+  const total    = subtotal - es;
+
+  document.getElementById('total-kg').textContent    = totalKg.toFixed(2) + ' kg';
+  document.getElementById('subtotal-val').textContent = fmtRp(subtotal);
+  document.getElementById('total-val').textContent    = fmtRp(total);
+
+  const esRow = document.getElementById('es-row');
+  if (es > 0) {
+    esRow.style.display = 'flex';
+    document.getElementById('es-val').textContent = '- ' + fmtRp(es);
+  } else {
+    esRow.style.display = 'none';
+  }
+
+  document.getElementById('btn-print').disabled = items.length === 0;
+}
+
+// ── Format ────────────────────────────────────────────────────────────────────
+function fmtRp(n) {
+  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+}
+
+function getTanggalFormatted() {
+  const val = document.getElementById('tanggal').value;
+  if (!val) return '';
+  const d = new Date(val + 'T00:00:00');
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// ── Simpan ────────────────────────────────────────────────────────────────────
+async function simpan() {
+  const nama = getNamaSupplier();
+  if (!nama) { showToast('Pilih atau isi nama supplier', true); return; }
+
+  const items = getItems();
+  if (items.length === 0) { showToast('Tambahkan minimal satu item', true); return; }
+
+  const es      = parseFloat(document.getElementById('es-balok')?.value) || 0;
+  const subtotal = items.reduce((s, i) => s + i.jumlah_nota, 0);
+  const total    = subtotal - es;
+
+  const tipeMap = {
+    beli:    { tipe: 'putih',         kas: 'keluar' },
+    jual:    { tipe: 'merah-jual',    kas: 'masuk'  },
+    packing: { tipe: 'merah-packing', kas: 'tidak ada' },
+  };
+
+  const data = {
+    tipe:            tipeMap[tipe].tipe,
+    kas:             tipeMap[tipe].kas,
+    nama,
+    tanggal:         getTanggalFormatted(),
+    no_nota:         document.getElementById('no-nota').value.trim(),
+    items,
+    es_balok:        es || null,
+    subtotal_nota:   subtotal,
+    subtotal_hitung: subtotal,
+    total_nota:      total,
+    total_hitung:    total,
+    total_status:    'ok',
+    selisih:         0,
+    flags:           [],
+    side_notes:      ''
+  };
+
+  lastSavedData = data;
+
+  const btn = document.getElementById('btn-simpan');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  try {
+    const res    = await fetch('/api/confirm', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data)
+    });
+    const result = await res.json();
+
+    if (result.status === 'ok') {
+      showToast('✓ Tersimpan ke Google Sheets');
+      document.getElementById('btn-print').disabled = false;
+    } else {
+      showToast('Gagal: ' + result.error, true);
+    }
+  } catch (e) {
+    showToast('Gagal terhubung ke server', true);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '✓ Simpan';
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────────
+function printNota() {
+  if (!lastSavedData) return;
+  const d = lastSavedData;
+
+  const tipeLabel = { putih: 'BELI', 'merah-jual': 'JUAL', 'merah-packing': 'PACKING' }[d.tipe] || d.tipe;
+  const itemsHtml = d.items.map(item => `
+    <div class="np-item">
+      <div>${item.jenis_nama} ${item.ukuran ? `uk.${item.ukuran}` : ''}</div>
+      <div class="np-row">
+        <span>${item.berat} kg × ${fmtRp(item.harga)}</span>
+        <span>${fmtRp(item.jumlah_nota)}</span>
+      </div>
+    </div>
+  `).join('');
+
+  const esHtml = d.es_balok ? `
+    <div class="np-row">
+      <span>Es Balok</span>
+      <span>- ${fmtRp(d.es_balok)}</span>
+    </div>` : '';
+
+  document.getElementById('nota-print').innerHTML = `
+    <div class="np-title">HAR JUAL BELI UDANG</div>
+    <div class="np-sub">Jl. Dermaga Baru RT 12 No. 34<br>Toko Lima - Muara Badak</div>
+    <div class="np-divider"></div>
+    <div class="np-row"><span>Nama</span><span>${d.nama}</span></div>
+    <div class="np-row"><span>Tanggal</span><span>${d.tanggal}</span></div>
+    <div class="np-row"><span>Tipe</span><span>${tipeLabel}</span></div>
+    ${d.no_nota ? `<div class="np-row"><span>No. Nota</span><span>${d.no_nota}</span></div>` : ''}
+    <div class="np-divider"></div>
+    ${itemsHtml}
+    <div class="np-divider"></div>
+    ${esHtml}
+    <div class="np-row np-total">
+      <span>TOTAL</span>
+      <span>${fmtRp(d.total_nota)}</span>
+    </div>
+    <div class="np-row" style="margin-top:4px">
+      <span>Total Timbangan</span>
+      <span>${d.items.reduce((s,i) => s+i.berat, 0).toFixed(2)} kg</span>
+    </div>
+    <div class="np-divider"></div>
+    <div style="text-align:center;font-size:10px;margin-top:4px">
+      Disetujui _____________ Pencatat _____________
+    </div>
+  `;
+
+  window.print();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, error = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (error ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

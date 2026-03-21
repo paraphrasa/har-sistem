@@ -18,6 +18,10 @@ CORS(app)
 def index():
     return send_from_directory(str(PUBLIC_DIR), "index.html")
 
+@app.route("/input")
+def input_nota():
+    return send_from_directory(str(PUBLIC_DIR), "input.html")
+
 # ── OCR endpoint ─────────────────────────────────────────────────────────────
 
 @app.route("/api/ocr", methods=["POST"])
