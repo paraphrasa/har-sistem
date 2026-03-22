@@ -279,6 +279,57 @@
   .toast.ok  { background: var(--accent); }
   .toast.err { background: var(--red); }
 
+  /* ── Tablet (768px+) ── */
+  @media (min-width: 768px) {
+    body { font-size: 16px; }
+
+    header { padding: 16px 24px; }
+    .h-title { font-size: 18px; }
+    .h-date  { font-size: 14px; }
+
+    .wrap { padding: 20px 24px; max-width: 900px; }
+
+    .tipe-btn { padding: 16px; font-size: 15px; }
+
+    .card { padding: 20px; margin-bottom: 14px; }
+    .card-title { font-size: 11px; margin-bottom: 16px; }
+
+    .field label { font-size: 12px; }
+    .inp { height: 54px; font-size: 17px; }
+    .row2 { grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* Item cards — dua kolom di tablet */
+    #items { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .item-card { margin-bottom: 0; }
+    .item-inp { height: 52px; font-size: 20px; }
+    .item-sel { height: 52px; font-size: 15px; }
+    .item-jml b { font-size: 18px; }
+    .item-lbl { font-size: 11px; }
+
+    .btn-add { height: 52px; font-size: 15px; margin-top: 10px; }
+
+    .es-inp { width: 90px; height: 54px; font-size: 24px; }
+    .es-lbl { font-size: 15px; }
+    .es-tot { font-size: 18px; }
+
+    .tot-row { padding: 10px 0; }
+    .tot-lbl { font-size: 15px; }
+    .tot-val { font-size: 17px; }
+    .tot-grand { font-size: 26px; }
+
+    .action-bar { padding: 14px 24px; }
+    .btn-main { height: 60px; font-size: 18px; border-radius: 12px; }
+
+    .toast { font-size: 15px; padding: 12px 24px; bottom: 86px; }
+  }
+
+  /* ── Tablet landscape — 3 kolom item ── */
+  @media (min-width: 1024px) {
+    .wrap { max-width: 1000px; }
+    #items { grid-template-columns: 1fr 1fr 1fr; }
+    .row2 { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
   @media print {
     body, header, .action-bar, .toast { display: none !important; }
     .nota-print { display: block !important; }
