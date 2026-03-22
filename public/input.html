@@ -311,6 +311,10 @@
     z-index: 200;
     white-space: nowrap;
   }
+
+  @media print {
+    .toast { display: none !important; }
+  }
   .toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -765,8 +769,15 @@ function printNota() {
       <span>${d.items.reduce((s,i) => s+i.berat, 0).toFixed(2)} kg</span>
     </div>
     <div class="np-divider"></div>
-    <div style="text-align:center;font-size:10px;margin-top:4px">
-      Disetujui _____________ Pencatat _____________
+    <div style="display:flex;justify-content:space-between;margin-top:16px;font-size:11px">
+      <div style="text-align:center;width:45%">
+        <div>Disetujui,</div>
+        <div style="margin-top:40px;border-top:1px solid #000;padding-top:4px">&nbsp;</div>
+      </div>
+      <div style="text-align:center;width:45%">
+        <div>Pencatat,</div>
+        <div style="margin-top:40px;border-top:1px solid #000;padding-top:4px">&nbsp;</div>
+      </div>
     </div>
   `;
 
