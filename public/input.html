@@ -390,23 +390,13 @@
     <div class="field-row full" style="margin-bottom:10px">
       <div class="field">
         <label>Supplier</label>
-        <select id="supplier-select" onchange="onSupplierChange(this)">
-          <option value="">— Pilih Supplier —</option>
-          <optgroup label="Supplier Besar">
-            <option value="Bakri">Bakri</option>
-            <option value="Dahlan">Dahlan</option>
-            <option value="Manna">Manna</option>
-          </optgroup>
-          <optgroup label="Petambak">
-            <option value="__baru__">+ Supplier Baru...</option>
-          </optgroup>
-        </select>
-      </div>
-    </div>
-    <div id="supplier-baru-field" class="field-row full" style="display:none;margin-bottom:10px">
-      <div class="field">
-        <label>Nama Supplier Baru</label>
-        <input type="text" id="supplier-baru" placeholder="Ketik nama supplier">
+        <input type="text" id="supplier-input" placeholder="Ketik nama supplier..." 
+          list="supplier-list" autocomplete="off">
+        <datalist id="supplier-list">
+          <option value="Bakri">
+          <option value="Dahlan">
+          <option value="Manna">
+        </datalist>
       </div>
     </div>
     <div class="field-row">
@@ -438,11 +428,19 @@
   <!-- Es Balok -->
   <div class="section">
     <div class="section-title">Es Balok (Opsional)</div>
-    <div class="field-row">
-      <div class="field">
-        <label>Potongan Es (Rp)</label>
-        <input type="number" id="es-balok" placeholder="0" min="0" oninput="updateTotal()">
-      </div>
+    <div class="items-header">
+      <span>Jumlah</span>
+      <span>Harga/balok</span>
+      <span></span>
+      <span>Total</span>
+      <span></span>
+    </div>
+    <div class="item-row">
+      <input type="number" id="es-qty" placeholder="0" min="0" oninput="updateEs()">
+      <input type="number" id="es-harga" placeholder="0" min="0" oninput="updateEs()">
+      <div></div>
+      <span id="es-jumlah" style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--red);text-align:right;padding-right:4px">Rp 0</span>
+      <div></div>
     </div>
   </div>
 
@@ -518,18 +516,8 @@ function setTipe(t) {
 }
 
 // ── Supplier ──────────────────────────────────────────────────────────────────
-function onSupplierChange(sel) {
-  const baruField = document.getElementById('supplier-baru-field');
-  baruField.style.display = sel.value === '__baru__' ? 'block' : 'none';
-  if (sel.value === '__baru__') {
-    document.getElementById('supplier-baru').focus();
-  }
-}
-
 function getNamaSupplier() {
-  const sel = document.getElementById('supplier-select').value;
-  if (sel === '__baru__') return document.getElementById('supplier-baru').value.trim();
-  return sel;
+  return document.getElementById('supplier-input').value.trim();
 }
 
 // ── Items ─────────────────────────────────────────────────────────────────────
@@ -618,11 +606,25 @@ function getItems() {
   return items;
 }
 
+function updateEs() {
+  const qty   = parseFloat(document.getElementById('es-qty')?.value) || 0;
+  const harga = parseFloat(document.getElementById('es-harga')?.value) || 0;
+  const total = Math.round(qty * harga * 1000);
+  document.getElementById('es-jumlah').textContent = fmtRp(total);
+  updateTotal();
+}
+
+function getEsBalok() {
+  const qty   = parseFloat(document.getElementById('es-qty')?.value) || 0;
+  const harga = parseFloat(document.getElementById('es-harga')?.value) || 0;
+  return Math.round(qty * harga * 1000);
+}
+
 function updateTotal() {
   const items    = getItems();
   const totalKg  = items.reduce((s, i) => s + i.berat, 0);
   const subtotal = items.reduce((s, i) => s + i.jumlah_nota, 0);
-  const es       = parseFloat(document.getElementById('es-balok')?.value) || 0;
+  const es       = getEsBalok();
   const total    = subtotal - es;
 
   document.getElementById('total-kg').textContent    = totalKg.toFixed(2) + ' kg';
@@ -665,7 +667,7 @@ async function simpan() {
   const items = getItems();
   if (items.length === 0) { showToast('Tambahkan minimal satu item', true); return; }
 
-  const es      = parseFloat(document.getElementById('es-balok')?.value) || 0;
+  const es      = getEsBalok();
   const subtotal = items.reduce((s, i) => s + i.jumlah_nota, 0);
   const total    = subtotal - es;
 
